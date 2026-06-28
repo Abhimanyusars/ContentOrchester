@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import structlog
 from sqlalchemy.ext.asyncio import (
@@ -27,20 +28,34 @@ _engine: AsyncEngine | None = None
 _session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
+def _prepare_postgres_url(url: str) -> tuple[str, dict[str, Any]]:
+    """Strip sslmode from URL (breaks asyncpg) and enable SSL for cloud Postgres."""
+    if "postgresql" not in url:
+        return url, {}
+
+    parsed = urlparse(url)
+    params = [(key, value) for key, value in parse_qsl(parsed.query) if key != "sslmode"]
+    clean_url = urlunparse(parsed._replace(query=urlencode(params)))
+    return clean_url, {"ssl": "require"}
+
+
 def get_engine() -> AsyncEngine:
     """Create or return the async database engine."""
     global _engine
     try:
         if _engine is None:
             settings = get_settings()
+            database_url = settings.database_url
             engine_kwargs: dict[str, Any] = {
                 "echo": settings.debug,
             }
             if settings.standalone_mode:
                 engine_kwargs["connect_args"] = {"check_same_thread": False}
             else:
+                database_url, pg_connect_args = _prepare_postgres_url(database_url)
+                engine_kwargs["connect_args"] = pg_connect_args
                 engine_kwargs.update(pool_pre_ping=True, pool_size=10, max_overflow=20)
-            _engine = create_async_engine(settings.database_url, **engine_kwargs)
+            _engine = create_async_engine(database_url, **engine_kwargs)
         return _engine
     except Exception as exc:
         logger.error("database_engine_init_failed", error=str(exc))
