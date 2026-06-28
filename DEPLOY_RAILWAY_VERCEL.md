@@ -47,13 +47,15 @@ This is the recommended path if you do **not** want a VPS.
 ### Step 3: Configure the API service
 
 1. Click the **API service** (from GitHub)
-2. **Settings → Root Directory** → set to `backend`
-3. **Settings → Deploy** → confirm start command:
-   ```
-   uvicorn app.main:app --host 0.0.0.0 --port $PORT
-   ```
-4. **Settings → Networking → Generate Domain** → copy URL  
+2. **Settings → Root Directory** → set to `backend`  
+   (Required — all Python code and `Dockerfile` live in `backend/`)
+3. **Settings → Config-as-code file** → set to `/backend/railway.toml`  
+   (Or leave blank if root directory is `backend` — Railway auto-detects `railway.toml` there)
+4. Confirm **Settings → Build** shows `Builder: Dockerfile` (from `railway.toml`)
+5. **Settings → Networking → Generate Domain** → copy URL  
    Example: `https://contentorchester-api-production.up.railway.app`
+
+> **Build failed from repo root?** Railway was looking at the monorepo root (no `requirements.txt` there). Root Directory **must** be `backend`.
 
 ### Step 4: Set API environment variables
 
@@ -85,10 +87,7 @@ Agents **will not run** without this second service.
 
 1. Click **+ New → GitHub Repo** → same `ContentOrchester` repo
 2. **Settings → Root Directory** → `backend`
-3. **Settings → Deploy → Custom Start Command**:
-   ```
-   arq app.workers.content_worker.WorkerSettings
-   ```
+3. **Settings → Config-as-code file** → `/backend/railway.worker.toml`
 4. **Variables** → copy the **same variables** as the API service (DATABASE_URL, REDIS_URL, GROQ, TAVILY, JWT, etc.)
 5. Worker does **not** need a public domain
 
@@ -203,6 +202,8 @@ User browser
 
 | Problem | Fix |
 |---------|-----|
+| Build fails — no recognizable project files | **Root Directory** = `backend`; `builder = "DOCKERFILE"` in `railway.toml` |
+| Invalid builder `nixpacks` | Use `DOCKERFILE` (already fixed in repo) |
 | CORS error in browser | Set `CORS_ORIGINS` to exact Vercel URL (no trailing slash) |
 | Jobs stuck on pending | Check Worker logs on Railway; ensure Redis URL is set |
 | `401` on brief API | JWT issue — check `JWT_SECRET` matches on API + Worker |
