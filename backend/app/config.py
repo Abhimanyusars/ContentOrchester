@@ -3,17 +3,25 @@
 from __future__ import annotations
 
 from functools import lru_cache
+import os
 from typing import Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+def _env_files() -> tuple[str, ...] | None:
+    """Skip local .env files on Railway so platform env vars always win."""
+    if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("RAILWAY_SERVICE_ID"):
+        return None
+    return (".env", "../.env")
+
+
 class Settings(BaseSettings):
     """Central configuration for the content creation system."""
 
     model_config = SettingsConfigDict(
-        env_file=(".env", "../.env"),
+        env_file=_env_files(),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -110,6 +118,20 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         except Exception as exc:
             raise ValueError(f"Invalid CORS origins: {exc}") from exc
+
+    @field_validator("standalone_mode", mode="before")
+    @classmethod
+    def parse_standalone_mode(cls, value: object) -> bool:
+        """Accept common bool string formats from Railway env vars."""
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip().strip('"').strip("'").lower()
+            if normalized in {"false", "0", "no", "off"}:
+                return False
+            if normalized in {"true", "1", "yes", "on"}:
+                return True
+        return bool(value)
 
     @field_validator("cors_origins", mode="before")
     @classmethod
