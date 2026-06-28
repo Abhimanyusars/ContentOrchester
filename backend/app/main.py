@@ -68,6 +68,17 @@ def create_app() -> FastAPI:
         app.include_router(briefs.router)
         app.include_router(ws.router)
 
+        @app.get("/")
+        async def root() -> dict[str, str]:
+            """Landing page when visiting the API base URL."""
+            return {
+                "name": settings.app_name,
+                "version": __version__,
+                "status": "running",
+                "health": f"{settings.api_prefix}/health",
+                "docs": "/docs",
+            }
+
         return app
     except Exception as exc:
         logger.error("app_creation_failed", error=str(exc))
