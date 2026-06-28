@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
@@ -57,10 +56,8 @@ def create_app() -> FastAPI:
         )
 
         cors_origins = settings.cors_origin_list
-        # Allow all Vercel preview + production URLs when deployed to Railway/cloud
-        cors_origin_regex = None
-        if os.getenv("RAILWAY_ENVIRONMENT") or settings.app_env == "production":
-            cors_origin_regex = r"https://.*\.vercel\.app"
+        # Always allow Vercel production + preview URLs (safe: only matches *.vercel.app)
+        cors_origin_regex = r"https://.*\.vercel\.app"
 
         app.add_middleware(
             CORSMiddleware,
