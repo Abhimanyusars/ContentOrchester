@@ -53,6 +53,9 @@ class Settings(BaseSettings):
 
     # Railway / cloud connection strings (override host-based config)
     database_url_override: str | None = Field(default=None, validation_alias="DATABASE_URL")
+    database_private_url_override: str | None = Field(
+        default=None, validation_alias="DATABASE_PRIVATE_URL"
+    )
     redis_url_override: str | None = Field(default=None, validation_alias="REDIS_URL")
 
     # Tavily (free tier: 1000 searches/month)
@@ -77,18 +80,37 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 1440
 
+    @staticmethod
+    def _is_valid_connection_url(url: str | None) -> bool:
+        """Reject empty or unresolved Railway template variables."""
+        if not url or not str(url).strip():
+            return False
+        cleaned = str(url).strip()
+        if "${{" in cleaned or cleaned.startswith("$"):
+            return False
+        return cleaned.startswith(
+            ("postgres://", "postgresql://", "postgresql+asyncpg://", "redis://", "rediss://")
+        )
+
+    @staticmethod
+    def _normalize_postgres_url(url: str) -> str:
+        """Convert Railway/Heroku URLs to asyncpg SQLAlchemy format."""
+        if url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql+asyncpg://", 1)
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
+
     @property
     def database_url(self) -> str:
         """Async database connection URL."""
         if self.standalone_mode:
             return f"sqlite+aiosqlite:///{self.sqlite_path}"
-        if self.database_url_override:
-            url = self.database_url_override
-            if url.startswith("postgres://"):
-                return url.replace("postgres://", "postgresql+asyncpg://", 1)
-            if url.startswith("postgresql://"):
-                return url.replace("postgresql://", "postgresql+asyncpg://", 1)
-            return url
+
+        for candidate in (self.database_private_url_override, self.database_url_override):
+            if self._is_valid_connection_url(candidate):
+                return self._normalize_postgres_url(str(candidate).strip())
+
         return (
             f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
@@ -97,8 +119,8 @@ class Settings(BaseSettings):
     @property
     def redis_url(self) -> str:
         """Redis connection URL."""
-        if self.redis_url_override:
-            return self.redis_url_override
+        if self._is_valid_connection_url(self.redis_url_override):
+            return str(self.redis_url_override).strip()
         if self.redis_password:
             return (
                 f"redis://:{self.redis_password}@{self.redis_host}:"

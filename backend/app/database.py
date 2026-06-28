@@ -29,14 +29,20 @@ _session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
 def _prepare_postgres_url(url: str) -> tuple[str, dict[str, Any]]:
-    """Strip sslmode from URL (breaks asyncpg) and enable SSL for cloud Postgres."""
-    if "postgresql" not in url:
+    """Strip sslmode from URL (breaks asyncpg) and set SSL for cloud Postgres."""
+    if "postgres" not in url:
         return url, {}
 
     parsed = urlparse(url)
-    params = [(key, value) for key, value in parse_qsl(parsed.query) if key != "sslmode"]
+    blocked = {"sslmode", "sslcert", "sslkey", "sslrootcert"}
+    params = [(key, value) for key, value in parse_qsl(parsed.query) if key not in blocked]
     clean_url = urlunparse(parsed._replace(query=urlencode(params)))
-    return clean_url, {"ssl": "require"}
+
+    host = (parsed.hostname or "").lower()
+    if host.endswith("railway.internal") or host in {"localhost", "127.0.0.1"}:
+        return clean_url, {}
+
+    return clean_url, {"ssl": True}
 
 
 def get_engine() -> AsyncEngine:
@@ -97,13 +103,22 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 async def init_db() -> None:
     """Create all database tables."""
     try:
+        settings = get_settings()
         engine = get_engine()
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        logger.info("database_initialized")
+        logger.info(
+            "database_initialized",
+            standalone=settings.standalone_mode,
+            host=urlparse(settings.database_url).hostname,
+        )
     except Exception as exc:
         logger.error("database_init_failed", error=str(exc))
-        raise RuntimeError(f"Failed to initialize database: {exc}") from exc
+        raise RuntimeError(
+            "Failed to initialize database. On Railway, paste DATABASE_URL from the "
+            "Postgres service (or set DATABASE_PRIVATE_URL). "
+            f"Details: {exc}"
+        ) from exc
 
 
 async def close_db() -> None:
