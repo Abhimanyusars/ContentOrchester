@@ -1,4 +1,4 @@
-# ContentForge
+# ContentOrchester
 
 Multi-agent AI content creation system. Three specialized agents — **Researcher**, **Writer**, and **Editor** — collaborate via LangGraph to produce publication-ready content.
 
