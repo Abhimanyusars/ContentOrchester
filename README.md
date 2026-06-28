@@ -145,6 +145,13 @@ Interactive docs: http://localhost:8000/docs
 └── README.md
 ```
 
+## Production Deployment
+
+| Stack | Guide |
+|-------|-------|
+| **Railway + Vercel** (recommended) | [DEPLOY_RAILWAY_VERCEL.md](./DEPLOY_RAILWAY_VERCEL.md) |
+| VPS + Docker | [DEPLOY.md](./DEPLOY.md) |
+
 ## Next Steps
 
 - Add authentication (JWT/OAuth)

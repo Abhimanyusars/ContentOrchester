@@ -6,7 +6,6 @@ import uuid
 
 import structlog
 from arq import create_pool
-from arq.connections import RedisSettings
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
 from app.api.auth import create_access_token, get_current_client
@@ -14,6 +13,7 @@ from app.api.deps import get_brief_service
 from app.config import get_settings
 from app.database import get_session_factory
 from app.models.content import ContentStatus
+from app.redis_settings import build_arq_redis_settings
 from app.schemas.brief import (
     ApproveRequest,
     ApproveResponse,
@@ -35,14 +35,7 @@ router = APIRouter(tags=["briefs"])
 async def _enqueue_phase1(job_id: uuid.UUID) -> None:
     """Enqueue phase 1 via ARQ."""
     try:
-        settings = get_settings()
-        redis_settings = RedisSettings(
-            host=settings.redis_host,
-            port=settings.redis_port,
-            database=settings.redis_db,
-            password=settings.redis_password,
-        )
-        pool = await create_pool(redis_settings)
+        pool = await create_pool(build_arq_redis_settings())
         await pool.enqueue_job("process_brief_phase1", str(job_id))
         await pool.close()
     except Exception as exc:

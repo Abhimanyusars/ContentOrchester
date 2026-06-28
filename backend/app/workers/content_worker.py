@@ -7,8 +7,8 @@ import uuid
 import structlog
 from arq.connections import RedisSettings
 
-from app.config import get_settings
 from app.database import get_session_factory
+from app.redis_settings import build_arq_redis_settings
 from app.services.brief_service import BriefService
 from app.services.content_service import ContentService
 
@@ -70,13 +70,7 @@ async def shutdown(ctx: dict) -> None:
 def _build_redis_settings() -> RedisSettings:
     """Build Redis settings from app config."""
     try:
-        settings = get_settings()
-        return RedisSettings(
-            host=settings.redis_host,
-            port=settings.redis_port,
-            database=settings.redis_db,
-            password=settings.redis_password,
-        )
+        return build_arq_redis_settings()
     except Exception as exc:
         raise RuntimeError(f"Failed to build worker Redis settings: {exc}") from exc
 
@@ -88,3 +82,4 @@ class WorkerSettings:
     functions = [process_content_job, process_brief_phase1]
     on_startup = startup
     on_shutdown = shutdown
+    job_timeout = 600

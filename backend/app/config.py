@@ -30,10 +30,22 @@ class Settings(BaseSettings):
     standalone_mode: bool = True
     sqlite_path: str = "contentforge.db"
 
+    # LLM provider: ollama (local) or groq (cloud — use on Railway)
+    llm_provider: Literal["ollama", "groq"] = "ollama"
+
     # Ollama (free, local LLM — no API key required)
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.2:1b"
     ollama_timeout_seconds: float = 120.0
+
+    # Groq (free tier — for Railway / cloud deploy)
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.1-8b-instant"
+    groq_base_url: str = "https://api.groq.com/openai/v1"
+
+    # Railway / cloud connection strings (override host-based config)
+    database_url_override: str | None = Field(default=None, validation_alias="DATABASE_URL")
+    redis_url_override: str | None = Field(default=None, validation_alias="REDIS_URL")
 
     # Tavily (free tier: 1000 searches/month)
     tavily_api_key: str = Field(default="", description="Tavily API key")
@@ -62,6 +74,13 @@ class Settings(BaseSettings):
         """Async database connection URL."""
         if self.standalone_mode:
             return f"sqlite+aiosqlite:///{self.sqlite_path}"
+        if self.database_url_override:
+            url = self.database_url_override
+            if url.startswith("postgres://"):
+                return url.replace("postgres://", "postgresql+asyncpg://", 1)
+            if url.startswith("postgresql://"):
+                return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            return url
         return (
             f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
@@ -70,6 +89,8 @@ class Settings(BaseSettings):
     @property
     def redis_url(self) -> str:
         """Redis connection URL."""
+        if self.redis_url_override:
+            return self.redis_url_override
         if self.redis_password:
             return (
                 f"redis://:{self.redis_password}@{self.redis_host}:"

@@ -30,15 +30,16 @@ async def health_check() -> HealthResponse:
         else:
             redis_health = await health_check_redis()
 
-        ollama_healthy = await get_llm_client().health_check()
-        ollama_health: dict[str, Any] = {
-            "status": "healthy" if ollama_healthy else "unhealthy",
-            "ollama": "connected" if ollama_healthy else "disconnected",
+        llm_healthy = await get_llm_client().health_check()
+        llm_health: dict[str, Any] = {
+            "status": "healthy" if llm_healthy else "unhealthy",
+            "provider": settings.llm_provider,
+            "connected": llm_healthy,
         }
 
         all_healthy = (
             db_health.get("status") == "healthy"
-            and ollama_health.get("status") == "healthy"
+            and llm_health.get("status") == "healthy"
             and (settings.standalone_mode or redis_health.get("status") == "healthy")
         )
 
@@ -48,7 +49,7 @@ async def health_check() -> HealthResponse:
             services={
                 "database": db_health,
                 "redis": redis_health,
-                "ollama": ollama_health,
+                "llm": llm_health,
             },
         )
     except Exception as exc:
