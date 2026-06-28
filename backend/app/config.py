@@ -161,8 +161,17 @@ class Settings(BaseSettings):
         """Allow comma-separated or list CORS origins in env."""
         try:
             if isinstance(value, list):
-                return ",".join(value)
-            return str(value)
+                return ",".join(str(v).strip().strip('"').strip("'") for v in value)
+            cleaned = str(value).strip()
+            if cleaned.startswith("[") and cleaned.endswith("]"):
+                import json
+                parsed = json.loads(cleaned)
+                return ",".join(str(origin).strip().strip('"').strip("'") for origin in parsed)
+            return ",".join(
+                part.strip().strip('"').strip("'")
+                for part in cleaned.split(",")
+                if part.strip()
+            )
         except Exception as exc:
             raise ValueError(f"Invalid CORS origins: {exc}") from exc
 
