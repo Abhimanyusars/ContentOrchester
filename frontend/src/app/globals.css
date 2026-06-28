@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-surface-900 text-slate-100 antialiased;
+  }
+
+  ::selection {
+    @apply bg-brand-500/40 text-white;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply rounded-2xl border border-white/[0.08] bg-surface-800/80 backdrop-blur-xl shadow-card;
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300 hover:border-brand-500/30 hover:shadow-glow;
+  }
+
+  .input-field {
+    @apply w-full rounded-xl border border-white/10 bg-surface-700/50 px-4 py-3 text-white
+      placeholder:text-slate-500 outline-none transition-all
+      focus:border-brand-500/50 focus:ring-2 focus:ring-brand-500/20;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r
+      from-brand-600 to-brand-500 px-6 py-3 text-sm font-semibold text-white
+      shadow-lg shadow-brand-500/25 transition-all
+      hover:from-brand-500 hover:to-brand-400 hover:shadow-brand-500/40
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/10
+      bg-surface-700/50 px-6 py-3 text-sm font-medium text-slate-300
+      transition-all hover:border-white/20 hover:bg-surface-700 hover:text-white;
+  }
+
+  .page-bg {
+    @apply relative min-h-screen bg-surface-900;
+  }
+
+  .page-bg::before {
+    content: "";
+    @apply pointer-events-none absolute inset-0 bg-hero-glow;
+  }
+
+  .page-bg::after {
+    content: "";
+    @apply pointer-events-none absolute inset-0 bg-grid-pattern bg-[length:48px_48px] opacity-40;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-white via-brand-200 to-brand-400 bg-clip-text text-transparent;
+  }
+}
