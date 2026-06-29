@@ -13,7 +13,7 @@ export function Navbar({ active = "home" }: NavbarProps) {
             <span className="text-sm font-bold text-white">CF</span>
           </div>
           <span className="font-display text-lg font-bold tracking-tight text-white">
-            ContentForge
+            ContentOrchestrator
           </span>
         </Link>
 

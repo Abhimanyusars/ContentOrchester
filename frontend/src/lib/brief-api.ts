@@ -1,4 +1,9 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL?.replace("/api/v1", "") || "http://localhost:8000";
+const API_URL = (() => {
+  const env = process.env.NEXT_PUBLIC_API_URL;
+  if (env) return env.replace("/api/v1", "");
+  if (typeof window !== "undefined") return "";
+  return "http://localhost:8000";
+})();
 
 export interface ContentBrief {
   topic: string;
@@ -90,6 +95,10 @@ export async function approveContent(
 }
 
 export function getWsUrl(taskId: string): string {
+  if (!API_URL && typeof window !== "undefined") {
+    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+    return `${proto}//${window.location.host}/ws/${taskId}`;
+  }
   const base = API_URL.replace("http://", "ws://").replace("https://", "wss://");
   return `${base}/ws/${taskId}`;
 }

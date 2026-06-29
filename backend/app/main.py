@@ -7,12 +7,12 @@ from collections.abc import AsyncGenerator
 
 import structlog
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
 from app.api.routes import briefs, content, health, ws
 from app.config import get_settings
 from app.database import close_db, init_db
+from app.middleware.cors import VercelCORSMiddleware
 
 structlog.configure(
     processors=[
@@ -55,18 +55,7 @@ def create_app() -> FastAPI:
             lifespan=lifespan,
         )
 
-        cors_origins = settings.cors_origin_list
-        # Always allow Vercel production + preview URLs (safe: only matches *.vercel.app)
-        cors_origin_regex = r"https://.*\.vercel\.app"
-
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=cors_origins,
-            allow_origin_regex=cors_origin_regex,
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
+        app.add_middleware(VercelCORSMiddleware)
 
         app.include_router(health.router, prefix=settings.api_prefix)
         app.include_router(content.router, prefix=settings.api_prefix)
