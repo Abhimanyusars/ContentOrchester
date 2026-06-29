@@ -18,7 +18,7 @@ from app.services.pipeline_broadcaster import broadcaster
 
 logger = structlog.get_logger(__name__)
 
-TOKEN_COST_PER_1K = 0.0001  # estimated Ollama-equivalent cost
+TOKEN_COST_PER_1K = 0.0001  # estimated per-token cost for analytics
 
 
 class BriefService:

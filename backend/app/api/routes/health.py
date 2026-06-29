@@ -33,7 +33,8 @@ async def health_check() -> HealthResponse:
         llm_healthy = await get_llm_client().health_check()
         llm_health: dict[str, Any] = {
             "status": "healthy" if llm_healthy else "unhealthy",
-            "provider": settings.llm_provider,
+            "provider": "groq",
+            "model": settings.groq_model,
             "connected": llm_healthy,
         }
 

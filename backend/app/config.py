@@ -38,18 +38,11 @@ class Settings(BaseSettings):
     standalone_mode: bool = True
     sqlite_path: str = "contentforge.db"
 
-    # LLM provider: ollama (local) or groq (cloud — use on Railway)
-    llm_provider: Literal["ollama", "groq"] = "ollama"
-
-    # Ollama (free, local LLM — no API key required)
-    ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "llama3.2:1b"
-    ollama_timeout_seconds: float = 120.0
-
-    # Groq (free tier — for Railway / cloud deploy)
+    # Groq LLM (cloud — required for all environments)
     groq_api_key: str = ""
     groq_model: str = "llama-3.1-8b-instant"
     groq_base_url: str = "https://api.groq.com/openai/v1"
+    llm_timeout_seconds: float = 120.0
 
     # Railway / cloud connection strings (override host-based config)
     database_url_override: str | None = Field(default=None, validation_alias="DATABASE_URL")

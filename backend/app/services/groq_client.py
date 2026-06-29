@@ -21,9 +21,9 @@ class GroqClient:
             self._base_url = settings.groq_base_url.rstrip("/")
             self._model = settings.groq_model
             self._api_key = settings.groq_api_key
-            self._timeout = settings.ollama_timeout_seconds
+            self._timeout = settings.llm_timeout_seconds
             if not self._api_key:
-                raise ValueError("GROQ_API_KEY is required when LLM_PROVIDER=groq")
+                raise ValueError("GROQ_API_KEY is required")
         except Exception as exc:
             logger.error("groq_client_init_failed", error=str(exc))
             raise RuntimeError(f"Failed to initialize Groq client: {exc}") from exc

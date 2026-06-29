@@ -23,7 +23,7 @@ Be concise but thorough. Cite sources when possible."""
 
 
 async def researcher_node(state: ContentAgentState) -> dict:
-    """Research the topic using Tavily and synthesize findings with Ollama."""
+    """Research the topic using Tavily and synthesize findings with Groq."""
     try:
         topic = state["topic"]
         content_type = state["content_type"]
